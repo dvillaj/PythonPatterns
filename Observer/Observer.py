@@ -1,55 +1,32 @@
-import abc
-
-class Observer(abc.ABC):
-
-    @abc.abstractmethod
-    def update(self, observable, args = None):
-        pass
-
-
 class Observable():
     def __init__(self):
         self.observers = []
 
     def registerObserver(self, observer):
-        self.observers.append(observer)
+        if (observer not in self.observers):
+            self.observers.append(observer)
 
     def removeObserver(self, observer):
-        index = self.observers.index(observer)
-        if (index >= 0):
-            del self.observers[index]
+        self.observers.remove(observer)
 
-    def notifyObservers(self, args = None):
+    def notifyObservers(self, **args):
         for observer in self.observers:
             observer.update(**args)
 
 
-class DisplayElement(abc.ABC):
+    def deleteObservers(self): self.observers = []
 
-    @abc.abstractmethod
-    def display(self):
-        pass
+
 
 
 class WeatherData(Observable):
-
     def __init__(self):
         self.observers = []
 
-    def registerObserver(self, observer):
-        self.observers.append(observer)
-
-    def removeObserver(self, observer):
-        index = self.observers.index(observer)
-        if (index >= 0):
-            del self.observers[index]
-
-    def notifyObservers(self):
-        for observer in self.observers:
-            observer.update(self.temperature, self.humidity, self.pressure)
-
     def measurementsChanged(self):
-        self.notifyObservers()
+        self.notifyObservers(temperature = self.temperature,
+                             humidity = self.humidity,
+                             pressure = self.pressure)
 
     def setMeasurements(self, temperature, humidity, pressure):
         self.temperature = temperature
@@ -57,22 +34,9 @@ class WeatherData(Observable):
         self.pressure = pressure
         self.measurementsChanged()
 
-    def getTemperature(self):
-        return self.temperature
 
-    def getHumidity(self):
-        return self.humidity
-
-    def getPressure(self):
-        return self.pressure
-
-
-
-class CurrentConditionsDisplay(Observer, DisplayElement):
-
-    def __init__(self, weatherData):
-        self.weatherData = weatherData
-        weatherData.registerObserver(self)
+# Observer
+class CurrentConditionsDisplay():
 
     def update(self, temperature, humidity, pressure):
         self.temperature = temperature
@@ -84,13 +48,10 @@ class CurrentConditionsDisplay(Observer, DisplayElement):
         print(f"Current conditions: {self.temperature} F degrees and {self.humidity}% humidity")
 
 
-
-class ForecastDisplay(Observer, DisplayElement):
-
-    def __init__(self, weatherData):
-        self.weatherData = weatherData
+# Observer
+class ForecastDisplay():
+    def __init__(self):
         self.currentPressure = 29.92
-        weatherData.registerObserver(self)
 
     def update(self, temperature, humidity, pressure):
         self.lastPressure = self.currentPressure
@@ -107,14 +68,13 @@ class ForecastDisplay(Observer, DisplayElement):
             print("Watch out for cooler, rainy weather")
 
 
-class HeatIndexDisplay(Observer, DisplayElement):
-    def __init__(self, weatherData):
-        self.weatherData = weatherData
+# Observer
+class HeatIndexDisplay():
+    def __init__(self):
         self.heatIndex = 0.0
-        weatherData.registerObserver(self)
 
     def update(self, temperature, humidity, pressure):
-        self.heatIndex = self.compute(temperature, humidity)
+        self.heatIndex = self.compute(temperature,humidity)
         self.display()
 
     def display(self):
@@ -135,9 +95,9 @@ class HeatIndexDisplay(Observer, DisplayElement):
             + (0.000000000843296 * (t * t * rh * rh * rh)))
             - (0.0000000000481975 * (t * t * t * rh * rh * rh)))
 
-
-class StatisticsDisplay(Observer, DisplayElement):
-    def __init__(self, weatherData):
+# Observer
+class StatisticsDisplay():
+    def __init__(self):
         self.weatherData = weatherData
         self.maxTemp = 0.0
         self.minTemp = 200.0
@@ -162,14 +122,14 @@ class StatisticsDisplay(Observer, DisplayElement):
         print(f"Avg/Max/Min temperature = {(self.tempSum / self.numReadings)}/{self.maxTemp}/{self.minTemp}")
 
 
-
 if __name__ == "__main__":
     weatherData = WeatherData();
 
-    currentDisplay = CurrentConditionsDisplay(weatherData)
-    statisticsDisplay = StatisticsDisplay(weatherData)
-    forecastDisplay = ForecastDisplay(weatherData)
-    heatIndexDisplay = HeatIndexDisplay(weatherData)
+    weatherData.registerObserver(CurrentConditionsDisplay())
+    weatherData.registerObserver(StatisticsDisplay())
+    weatherData.registerObserver(ForecastDisplay())
+    weatherData.registerObserver(HeatIndexDisplay())
+
 
     weatherData.setMeasurements(80, 65, 30.4)
     weatherData.setMeasurements(82, 70, 29.2)
